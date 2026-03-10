@@ -1,13 +1,8 @@
 #pragma once
 #include <vector>
 #include <string>
-
-struct Card {
-    std::string rank;
-    std::string suit;
-    int value;
-    std::string toString() const;
-};
+#include "Card.h"
+#include "ScoringSystem.h"
 
 class Deck {
 private:
@@ -21,8 +16,11 @@ public:
 class RunSession {
 private:
     Deck deck;
+    ScoringSystem scoringSystem; // Integrasi sistem skor
     int currentRound;
     const int MAX_ROUNDS = 5;
+    float totalRunScore;
+    float targetScore;
 
     bool playRound();
 
