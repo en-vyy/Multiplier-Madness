@@ -1,5 +1,6 @@
 #include "ScoringSystem.h"
 #include <iostream>
+#include <algorithm> // Dibutuhkan untuk std::stable_sort
 
 std::string StandardScoring::getColor(const std::string& suit) {
     if (suit == "Hearts" || suit == "Diamonds") return "Red";
@@ -49,9 +50,25 @@ float StandardScoring::calculateBaseScore(const std::vector<Card>& playedCards) 
 ScoringSystem::ScoringSystem(std::unique_ptr<IScoringStrategy> strat) 
     : strategy(std::move(strat)) {}
 
+// Fungsi untuk memasukkan item ke dalam sistem
+void ScoringSystem::addModifier(std::unique_ptr<IModifier> mod) {
+    if(mod) activeModifiers.push_back(std::move(mod));
+}
+
 float ScoringSystem::calculateTotalScore(const std::vector<Card>& playedCards) {
     float score = strategy->calculateBaseScore(playedCards);
     std::cout << "\n[Scoring] Base score from cards: " << score << "\n";
-    // Catatan: Modifier belum diterapkan di commit ini
+
+    // MENGURUTKAN ITEM BERDASARKAN PRIORITAS (1, 2, 3)
+    std::stable_sort(activeModifiers.begin(), activeModifiers.end(),
+        [](const std::unique_ptr<IModifier>& a, const std::unique_ptr<IModifier>& b) {
+            return a->getPriority() < b->getPriority();
+        });
+
+    // MENGHITUNG EFEK ITEM
+    for(const auto& mod : activeModifiers) {
+        mod->apply(score);
+        std::cout << "[Scoring] Applied " << mod->getName() << " -> New Score: " << score << "\n";
+    }
     return score;
 }
