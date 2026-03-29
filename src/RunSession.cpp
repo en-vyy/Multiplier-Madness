@@ -1,4 +1,5 @@
 #include "RunSession.h"
+#include "ModifierFactory.h" // Wajib dipanggil untuk menerjemahkan hasil belanja
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
@@ -33,9 +34,8 @@ std::vector<Card> Deck::draw(int count) {
     return hand;
 }
 
-// === PERUBAHAN COMMIT 2 ADA DI BAWAH INI ===
-
-RunSession::RunSession() : scoringSystem(std::make_unique<StandardScoring>()), currentRound(1), totalRunScore(0), targetScore(150.0f) {
+// Cari baris ini dan ubah targetScore menjadi 300.0f, playerGold menjadi 15
+RunSession::RunSession() : scoringSystem(std::make_unique<StandardScoring>()), currentRound(1), totalRunScore(0), targetScore(300.0f), playerGold(15), totalModifiersBought(0) {
     deck.initialize();
     deck.shuffle();
 }
@@ -48,20 +48,22 @@ void RunSession::start() {
             return; 
         }
         
-        // Target skor disesuaikan untuk murni kombinasi kartu (playable tanpa modifier)
-        if (currentRound == 1) targetScore = 300.0f;
-        else if (currentRound == 2) targetScore = 600.0f;
-        else if (currentRound == 3) targetScore = 900.0f;
-        else if (currentRound == 4) targetScore = 1200.0f;
+        // Target skor diseimbangkan agar mulus
+        if (currentRound == 1) targetScore = 1200.0f;
+        else if (currentRound == 2) targetScore = 4000.0f;
+        else if (currentRound == 3) targetScore = 15000.0f;
+        else if (currentRound == 4) targetScore = 100000.0f; // Akan sangat mudah kalau punya Square (^2)
         
         currentRound++;
     }
-    std::cout << "\n=== YOU WIN! RUN COMPLETED ===\n";
+    std::cout << "\n=== YOU WIN! LEGENDARY RUN COMPLETED ===\n";
     std::cout << "Total Final Run Score: " << totalRunScore << "\n";
+    std::cout << "Total Modifiers Accumulated: " << totalModifiersBought << "\n";
 }
 
 bool RunSession::playRound() {
-    std::cout << "\n--- ROUND " << currentRound << " OF " << MAX_ROUNDS << " ---\n";
+    std::cout << "\n====================================\n";
+    std::cout << "--- ROUND " << currentRound << " OF " << MAX_ROUNDS << " ---\n";
     std::cout << "TARGET SCORE TO BEAT: " << targetScore << "\n";
     
     std::vector<Card> hand = deck.draw(5);
@@ -91,12 +93,6 @@ bool RunSession::playRound() {
         playedCards.push_back(hand[cardIndex - 1]);
     }
 
-    std::cout << "\nYou played:\n";
-    for(const auto& c : playedCards) {
-        std::cout << "- " << c.toString() << "\n";
-    }
-    
-    // Ini yang memanggil kombinasi Blackjack/Full Color dari ScoringSystem
     float roundScore = scoringSystem.calculateTotalScore(playedCards);
     totalRunScore += roundScore;
     std::cout << ">>> FINAL ROUND SCORE: " << roundScore << " <<<\n";
@@ -104,7 +100,29 @@ bool RunSession::playRound() {
     if (roundScore < targetScore) {
         return false; 
     }
-    std::cout << "You beat the target!\n";
 
+    // --- SISTEM EKONOMI BARU ---
+    // Base 15 Gold + Bonus yang lebih cepat naik (dibagi 50, bukan 100)
+    int goldEarned = 15 + static_cast<int>((roundScore - targetScore) / 50);
+    playerGold += goldEarned;
+    std::cout << "You beat the target! Earned " << goldEarned << " Gold.\n";
+
+    // --- FASE TOKO ---
+    if (currentRound < MAX_ROUNDS) {
+        std::cout << "\n[ Entering Shop Phase ]\n";
+        while (true) {
+            int choice = shopSystem.browseShop(playerGold);
+            if (choice > 0 && choice <= 3) {
+                // Pabrik membuat item berdasarkan pilihan dari Toko
+                auto newMod = ModifierFactory::createModifier(choice);
+                scoringSystem.addModifier(std::move(newMod));
+                totalModifiersBought++;
+                std::cout << "Modifier active! Total modifiers equipped: " << totalModifiersBought << "\n";
+            } else if (choice == 0) {
+                std::cout << "Leaving shop...\n";
+                break; 
+            }
+        }
+    }
     return true; 
 }

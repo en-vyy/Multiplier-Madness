@@ -3,6 +3,7 @@
 #include <string>
 #include "Card.h"
 #include "ScoringSystem.h"
+#include "ShopSystem.h" // Tambahan baru
 
 class Deck {
 private:
@@ -16,11 +17,15 @@ public:
 class RunSession {
 private:
     Deck deck;
-    ScoringSystem scoringSystem; // Integrasi sistem skor
+    ScoringSystem scoringSystem;
+    ShopSystem shopSystem; // Tambahan baru
     int currentRound;
     const int MAX_ROUNDS = 5;
     float totalRunScore;
     float targetScore;
+    
+    int playerGold; // Uang pemain
+    int totalModifiersBought; // Melacak jumlah item
 
     bool playRound();
 
